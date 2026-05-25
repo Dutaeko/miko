@@ -1,0 +1,44 @@
+name: Android Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [debug, releaseUnsigned]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build debug
+        if: matrix.variant == 'debug'
+        run: ./gradlew :app:assembleDebug
+
+      - name: Build release unsigned
+        if: matrix.variant == 'releaseUnsigned'
+        run: ./gradlew :app:assembleReleaseUnsigned
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.variant }}-apk
+          path: app/build/outputs/apk/${{ matrix.variant }}/app-${{ matrix.variant }}.apk
+          if-no-files-found: error
